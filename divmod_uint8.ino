@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// This program tests my software uint16 division function udivmodhi4
+// This program tests my software uint8 division function udivmodqi4
 // against libgcc's implementation.
 
 // LLVM Differential Revision: https://reviews.llvm.org/D124600
