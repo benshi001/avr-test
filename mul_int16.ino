@@ -2,54 +2,40 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// This program tests the software int16/int8 multiplication functions
+// This program tests the software int16 multiplication function `__mulhi3`
 // against AVR's hardware multiplier.
 
-// LLVM Differential Revision: https://reviews.llvm.org/D123200
+// LLVM Differential Revision: https://reviews.llvm.org/D125077
 
-__attribute__((naked)) int mulhi3(int a, int b) {
+__attribute__((naked)) __attribute__((noinline)) int mulhi3(int a, int b) {
   __asm__ __volatile__ (
-      "__mulhi3:\n"
-      "\teor    r28, r28 \n"
-      "\teor    r20, r20 \n"
-      "\teor    r21, r21         ; Initialize the result to 0: `S = 0;`. \n"
+      "\teor   r0, r0\n"
+      "\teor   r1, r1            ; S = 0;\n"
       "\n"
-      "__mulhi3_loop: \n"
-      "\tcp     r24, r28 \n"
-      "\tcpc    r25, r28         ; `while (A != 0) { ... }` \n"
-      "\tbreq   __mulhi3_end     ; End the loop if A is 0. \n"
+      "__mulhi3_loop:\n"
+      "\teor   r21, r21\n"
+      "\tcp    r24, r21\n"
+      "\tcpc   r25, r21\n"
+      "\tbreq  __mulhi3_end      ; while (A != 0) {\n"
       "\n"
-      "\tmov    r29, r24 \n"
-      "\tandi   r29, 1           ; `if (A & 1) { ... }` \n"
-      "\tbreq   __mulhi3_loop_a  ; Omit the accumulation (`S += B;`) if  A's LSB is 0. \n"
+      "\tmov   r21, r24\n"
+      "\tandi  r21, 1\n"
+      "\tbreq  __mulhi3_loop_a   ;   if (A & 1)\n"
+      "\tadd   r0, r22\n"
+      "\tadc   r1, r23           ;     S += B;\n"
       "\n"
-      "\tadd    r20, r22 \n"
-      "\tadc    r21, r23         ; Do the accumulation: `S += B;`. \n"
+      "__mulhi3_loop_a:\n"
+      "\tlsr   r25\n"
+      "\tror   r24               ;   A = ((unsigned int) A) >> 1;\n"
+      "\tlsl   r22\n"
+      "\trol   r23               ;   B <<= 1;\n"
+      "\trjmp  __mulhi3_loop     ; }\n"
       "\n"
-      "__mulhi3_loop_a: \n"
-      "\tlsr    r25 \n"
-      "\tror    r24              ; `A = ((unsigned int) A) >> 1;`. \n"
-      "\tlsl    r22 \n"
-      "\trol    r23              ; `B <<= 1;` \n"
-      " \n"
-      "\trjmp   __mulhi3_loop \n"
-      " \n"
-      "__mulhi3_end: \n"
-      "\tmov    r24, r20 \n"
-      "\tmov    r25, r21 \n"
-      "\tret");
-}
-
-__attribute__((naked)) int mulqi3(char a, char b) {
-  __asm__ __volatile__ (
-  "\tmov    r25, r24\n"
-  "\tlsl    r25\n"
-  "\tsbc    r25, r25         ; Promote A from char to int: `(int) A`.\n"
-  "\tmov    r23, r22\n"
-  "\tlsl    r23\n"
-  "\tsbc    r23, r23         ; Promote B from char to int: `(int) B`.\n"
-  "\trcall  __mulhi3         ; `__mulhi3((int) A, (int) B);`.\n"
-  "\tret");
+      "__mulhi3_end:\n"
+      "\tmov   r24, r0\n"
+      "\tmov   r25, r1\n"
+      "\teor   r1, r1\n"
+      "\tret                     ; return S;");
 }
 
 volatile int arr0[] = {17767, 9158, -26519, 18547, -9135, 23807, -27574, 22764, 7977, 31949, 22714, -10325, 16882, 7931, -22045, -7866, 124, 25282, 2132, 10232, 8987, -5656, -12825, 17293, 3958, 9562, -1746, 29283, -15821, -10337, -15159, 1946, -1178, 23858, 20493, -10313, -17871, -7080, 12451, -9894, 24869, -30371, -20219, -23785, -22440, 23273, -31650, -22316, -16981, -29518, -12083, -7994, 30363, -24908, 9300, -31215, -15346, 7554, -1932, -31167, -2783, -17091, -29220, -3961, 6768, -8727, -14274, -11103, -15807, -1823, -20996, 9063, -32194, 24321, -14722, 10903, -17942, 19164, -11413, 30614, -10353, -23496, 22620, 20010, 17132, 31920, -11205, 1787, -26062, -13137, -29380, -28844, -30228, 6936, 32731, -23460, -1790, 18458, 30974, -17597, 16635, 9978, -8534, -15558, -31237, -23255, -4655, 16358, -4091, -16068, -18564, -14444, 25973, 4056, 5566, -22431, -29559, -5639, -20644, 9915, -18776, 15513, -18929, 16533, 22449, 13803, -6927, 20659, 32261, 24047, 3063, -16640, -31511, -5471, -32198, 2789, -28726, 28683, 19147, 32720, 12616, 583, 18276, -26947, 4639, 23843, 16158, -24920, 18204, -4485, -15004, -571, 11028, 31603, 15962, -32059, -20130, 9035, -11399, 12131, -32453, -8336, -4508, 1572, -13807, 28830, 4361, 23004, -8022, 23508, -9812, 4594, 24091, 8464, -22353, 28731, 32307, -6195, 3811, -15024, -10680, -11193, -15595, 348, 20411, 367, -31710, 281, 9402, 22427, 12413, -23051, 14091, 7905, -21478, 284, -28801, -17117, 23288, 28713, 6392, 13476, -32229, 30483, 21941, 10954, -6322, -11288, 4760, -2510, -26312, -5920, -13703, 23629, -5571, 6708, 23996, 28255, 6990, -32137, -14854, 19403, 10348, -763, 27308, -11130, -479, -1493, -28246, 22810, 27221, -21854, -29250, -5008, 8629, -7309, 5947, 2308, -18596, 10707, -202, 20628, 4787, -13905, -21278, -784, -7196, 2718, 27471, -206, -29419, 12617, 19197, -19070, 11854, -19031, -30200, 11376, -20524, 7090, -31350, 6697, -14764, 4936, 1690, -6134, -2372, 7637, -3826, -20968, 18344, -4028, -340, 23131, -17933, -21618, 22348, -25129, -18899, -15717, -25335, 17218, -3099, -6138, -1852, 8755, -25169, -32051, 20131, 19844, -24961, -11219, 26541, 25812, -6282, 28231, 19678, -8654, -29668, 15852, };
@@ -63,25 +49,11 @@ void setup(void) {
 void loop(void) {
   // put your main code here, to run repeatedly:
   unsigned int i = 0;
-  for (i = 0; i < 300; i++) {
+  for (i = 0; i < sizeof(arr0) / sizeof(*arr0); i++) {
     // Check int16 mul.
     volatile int i0 = arr0[i] * arr1[i];
     volatile int i1 = mulhi3(arr0[i], arr1[i]);
-    if (i0 == i1)
-      Serial.println("int16 mul correct");
-    else
-      Serial.println("int16 mul incorrect");
-
-    // Check int8 mul.
-    volatile char c0 = arr0[i];
-    volatile char c1 = arr1[i];
-    i0 = c0 * c1;
-    i1 = mulqi3(c0, c1);
-    if (i0 == i1)
-      Serial.println("int8 mul correct");
-    else
-      Serial.println("int8 mul incorrect");
-
+    Serial.println(i0 == i1 ? "int16 mul correct" : "int16 mul incorrect");
     delay(100);
   }
 }
