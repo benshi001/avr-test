@@ -60,7 +60,6 @@ unsigned int libgcc(signed char i, signed char j) {
 }
 
 void setup(void) {
-  // put your setup code here, to run once:
   Serial.begin(115200);         // Initialize the communication port.
   volatile int r;
   r = divmodqi4(73, 19);        // Placeholder to avoid LTO eliminates divmodqi4.
