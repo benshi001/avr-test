@@ -9,11 +9,11 @@
 
 __attribute__((naked)) __attribute__((noinline)) int mulhi3(int a, int b) {
   __asm__ __volatile__ (
-      "\teor   r0, r0\n"
-      "\teor   r1, r1            ; S = 0;\n"
+      "\tclr   r0\n"
+      "\tclr   r1                ; S = 0;\n"
       "\n"
       "__mulhi3_loop:\n"
-      "\teor   r21, r21\n"
+      "\tclr   r21\n"
       "\tcp    r24, r21\n"
       "\tcpc   r25, r21\n"
       "\tbreq  __mulhi3_end      ; while (A != 0) {\n"
@@ -34,7 +34,7 @@ __attribute__((naked)) __attribute__((noinline)) int mulhi3(int a, int b) {
       "__mulhi3_end:\n"
       "\tmov   r24, r0\n"
       "\tmov   r25, r1\n"
-      "\teor   r1, r1\n"
+      "\tclr   r1\n"
       "\tret                     ; return S;");
 }
 
