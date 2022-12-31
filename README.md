@@ -1,4 +1,9 @@
 # avr-test
 
-This project contains test cases for porting the builtins component of the
-compiler-rt project (https://compiler-rt.llvm.org/) to the AVR target.
+This project contains contrast tests between AVR tool chains, which includes (but not limits to)
+
+| GNU tool chain | LLVM tool chain |
+| -------------- | --------------- |
+| libgcc         | compiler-rt     |
+| avr-gcc        | clang           |
+| avr-ld         | lld             |
